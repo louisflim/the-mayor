@@ -9,7 +9,7 @@ You have **10 days** to put **₱1,000,000** (pretend pesos) in your offshore ac
 **arrested** (Suspicion hits 100) or **ousted by a rioting public** (Approval hits 0). Talk to visitors
 in English, Filipino or Taglish.
 
-Final project for *Applications of Data Science and Artificial Intelligence* by
+Final project for *Applied AI* by
 Emman Roy D. Pielago, Gyle M. Amihan and Louis Francis M. Lim.
 
 > Everything in the game is fiction and satire. No real politicians, parties, companies or places.
