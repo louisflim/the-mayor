@@ -1,7 +1,9 @@
 """HTML/CSS building blocks for the Streamlit UI, laid out after the team's Figma lo-fi screens
 (title, main game, envelope offer, debate, end of day, game over).
 
-Every piece of player or model text goes through esc() before it lands in HTML."""
+Every piece of player or model text goes through esc() before it lands in HTML.
+
+The hi-fi look from the Figma game screen lives in ui_hifi.py and is hooked in at the very bottom."""
 
 import html
 import re
@@ -505,3 +507,14 @@ def live_reactions(items: list) -> str:
 def if_ended_now(score: int | None) -> str:
     v = "—" if score is None else f"Approval {score:+d}"
     return f"<div class='box'><div class='muted' style='font-size:.65rem;letter-spacing:.1em;text-transform:uppercase'>If it ended now</div><b style='font-size:1.3rem'>{v}</b></div>"
+
+
+# ---------------------------------------------------------------------------
+# Hi-fi theme hook. Keep this at the VERY BOTTOM: ui_hifi imports the helpers above (esc, colors, bar, ...)
+# from this module, so they must already be defined when this import runs.
+
+from . import ui_hifi as _hf  # noqa: E402
+
+CSS = CSS + _hf.CSS
+topbar, banner, visitors_today, memory_notes = _hf.topbar, _hf.banner, _hf.visitors_today, _hf.memory_notes
+scene, nameplate, dialogue, paper_mini, last_deal = _hf.scene, _hf.nameplate, _hf.dialogue, _hf.paper_mini, _hf.last_deal
