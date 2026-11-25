@@ -1,6 +1,6 @@
 """The Mayor: a satirical role-playing chatbot game set in the made-up Pogi City.
 
-Screens follow the team's Figma lo-fi wireframes: title, main game, envelope offer,
+Screens follow the team's Figma wireframes: main menu, main game, envelope offer,
 debate/speech event, end of day, and game over.
 
 Run with:  streamlit run app.py
@@ -15,6 +15,7 @@ import streamlit as st
 from mayor import config as C
 from mayor import engine as E
 from mayor import ui
+from mayor import ui_hifi
 from mayor.brain import ScriptedBrain, make_brain
 from mayor.cast import EVENTS, VISITORS, get_card
 from mayor.defenses import clean_input, kuya_boy_callout
@@ -50,6 +51,7 @@ TOMORROW = {
     7: "Something big tomorrow. Depends how suspicious people are.", 9: "Election debate against Konsehal Tanyag.",
     10: "Your last day. Ms. Reyes will be there.",
 }
+EVENT_LABELS = {"typhoon": "BAGYO ALERT!", "fiesta": "PISTA!", "scandal": "BREAKING!", "ribbon": "TIRA!", "debate": "DEBATE!"}
 
 
 def html(s: str, where=st):
@@ -257,6 +259,12 @@ def how_to_play():
         "_Everything is fiction and satire. No real politicians, parties or places._")
 
 
+@st.dialog("Credits")
+def credits_dialog():
+    st.markdown("**The Mayor** · a political survival game\n\nEmman Roy D. Pielago · Gyle M. Amihan · Louis Francis M. Lim\n\n"
+                "_Fictional satire. No real politicians, parties or places._")
+
+
 @st.dialog("Take the oath")
 def new_term_dialog():
     name = st.text_input("Your name, Mayor", placeholder="e.g. Kiko, Pogi, Ganda, Maria", max_chars=20)
@@ -311,32 +319,47 @@ def envelope_dialog(cid: str):
 
 def title_screen():
     g = st.session_state.get("game")
-    html("<div class='banderitas'></div><div class='ttl-top'><span>v1.0 · Pogi City Hall</span>"
-         "<span>Language: EN / Taglish</span></div>")
-    left, mid, right = st.columns([1, 1.5, 1], gap="large")
-    html(ui.title_art_left(), left)
-    with mid:
-        html(ui.title_center())
-        _, bcol, _ = st.columns([1, 2, 1])
-        if bcol.button("New term", type="primary", use_container_width=True):
-            new_term_dialog()
-        live = g is not None and g.phase != "ended"
-        if bcol.button(f"Continue (Araw {g.day})" if live else "Continue", use_container_width=True, disabled=not live):
-            st.session_state.screen = "game"
-            st.rerun()
-        if bcol.button("How to play", use_container_width=True):
-            how_to_play()
-        if bcol.button("Settings", use_container_width=True):
-            settings_dialog()
-    html(ui.title_art_right([(c, get_card(c)) for c in ["lola_rosing", "don_ramon", "ms_reyes", "engr_santos", "kuya_boy", "carlo"]]), right)
-    html("<div class='foot'>Fictional satire set in the Philippines. No real politicians, parties or places.</div>")
+    live = g is not None and g.phase != "ended"
+    html(ui_hifi.MENU_BG)
+    left, _mid, right = st.columns([1.15, 1.2, 1], gap="large")
+    with left:
+        with st.container(key="menu_card"):
+            html(ui_hifi.menu_header())
+            if live:  # only offer Continue when there is a game in progress
+                if st.button("Continue", key="menu_continue", use_container_width=True):
+                    st.session_state.screen = "game"
+                    st.rerun()
+                html(f"<div class='mm-cap'>ARAW {g.day} / {C.TERM_DAYS} · Mayor {ui.esc(g.mayor_name)}</div>")
+            if st.button("New game", key="menu_new", use_container_width=True):
+                new_term_dialog()
+            c1, c2, c3 = st.columns(3)
+            if c1.button("How to play", key="menu_sm_how", use_container_width=True):
+                how_to_play()
+            if c2.button("Settings", key="menu_sm_settings", use_container_width=True):
+                settings_dialog()
+            if c3.button("Credits", key="menu_sm_credits", use_container_width=True):
+                credits_dialog()
+            html("<div class='mm-cap'>Sampung araw. Isang lungsod. Ikaw ang mayor.</div>")
+    with right:
+        html(ui_hifi.welcome_pill())
+    html(ui_hifi.menu_bar())
+
+
+# Visitors who ask for help (Accept makes sense even with no money involved). Add more card ids here.
+HELP_REQUESTERS = {"lola_rosing"}
+
+
+def quick_offers(card) -> tuple[bool, bool]:
+    """(show Accept, show Haggle): only when there is an envelope, an ask, or a plea for help on the table."""
+    deal = card.max_bribe > 0 or bool(card.ask)
+    return deal or card.id in HELP_REQUESTERS, deal
 
 
 def banner_for(g) -> tuple[str, str, bool]:
     cid = g.current_id()
     event = next((c for c in g.lineup if c in EVENTS), None)
     if cid in EVENTS:
-        return "Random event", ui.esc(EVENT_BANNERS.get(cid, "")), True
+        return EVENT_LABELS.get(cid, "Random event"), ui.esc(EVENT_BANNERS.get(cid, "")), True
     for line in g.briefing:
         if line.startswith("📻"):
             return "Radyo Pogi", ui.esc(line.lstrip("📻 ")), True
@@ -374,7 +397,7 @@ def game_screen(g):
     with mid:
         html(ui.scene(card, cid, is_event))
         html(ui.nameplate(card, is_event, g.slot, len(g.lineup), g.mayor_turns, turns))
-        html(ui.dialogue(g.transcript, card))
+        html(ui.dialogue(g.transcript, card))  # full conversation, newest at the bottom
         if st.session_state.get("llm_error"):
             st.warning(f"The AI didn't answer, so the offline script stood in. ({st.session_state.llm_error[:140]})")
             st.session_state.llm_error = None
@@ -383,37 +406,35 @@ def game_screen(g):
             st.info(f"🚪 {card.name} has left your office." if g.visitor_left else
                     "⏰ Time's up. Kuya Boy is showing them out.")
         else:
-            cols = st.columns(5)
+            show_accept, show_haggle = quick_offers(card)
+            acts = ([("Accept", "act_accept")] if show_accept else []) + ([("Haggle", "act_haggle")] if show_haggle else []) + \
+                   [("Refuse", "act_refuse"), ("Threaten", "act_threaten"), ("Sagot-pulitiko", "act_sagot")]
+            lines = {"act_refuse": "refuse", "act_threaten": "threaten", "act_sagot": "vague"}
             briber = card.max_bribe > 0
-            if cols[0].button("Accept", use_container_width=True):
-                if briber:
-                    envelope_dialog(cid)
-                elif card.ask:
-                    st.session_state.pending = f"Sige, eto na ang ₱{card.ask:,}. Basta tahimik ka, ha?"
-                    st.rerun()
+            for col, (lbl, k) in zip(st.columns(len(acts)), acts):
+                if not col.button(lbl, key=k, use_container_width=True):
+                    continue
+                if k == "act_accept":
+                    if briber:
+                        envelope_dialog(cid)
+                        continue
+                    st.session_state.pending = (f"Sige, eto na ang ₱{card.ask:,}. Basta tahimik ka, ha?" if card.ask
+                                                else QUICK_LINES["accept_help"])
+                elif k == "act_haggle":
+                    if briber:
+                        envelope_dialog(cid)
+                        continue
+                    st.session_state.pending = "Masyadong mahal 'yan. Kalahati na lang." if card.ask else QUICK_LINES["haggle_plain"]
                 else:
-                    st.session_state.pending = QUICK_LINES["accept_help"]
-                    st.rerun()
-            if cols[1].button("Haggle", use_container_width=True):
-                if briber:
-                    envelope_dialog(cid)
-                else:
-                    st.session_state.pending = ("Masyadong mahal 'yan. Kalahati na lang." if card.ask
-                                                else QUICK_LINES["haggle_plain"])
-                    st.rerun()
-            for col, (lbl, key) in zip(cols[2:], [("Refuse", "refuse"), ("Threaten", "threaten"), ("Sagot-pulitiko", "vague")]):
-                if col.button(lbl, use_container_width=True):
-                    st.session_state.pending = QUICK_LINES[key]
-                    st.rerun()
+                    st.session_state.pending = QUICK_LINES[lines[k]]
+                st.rerun()
             with st.form("say", clear_on_submit=True, border=False):
                 c1, c2 = st.columns([5, 1])
                 said = c1.text_input("say", placeholder="Type what you say... (English, Filipino or Taglish)",
                                      label_visibility="collapsed", max_chars=C.MAX_INPUT_CHARS + 200)
-                if c2.form_submit_button("Send", type="primary", use_container_width=True) and said.strip():
+                if c2.form_submit_button("Send", key="send", type="primary", use_container_width=True) and said.strip():
                     st.session_state.pending = said
                     st.rerun()
-        with st.expander(f"Full conversation ({len([m for m in g.transcript if m['role'] != 'kuya'])} messages)"):
-            html(ui.history(g.transcript, card, g.mayor_name))
 
     with right:
         html(ui.paper_mini(g.headlines[-1][1] if g.headlines else None))
@@ -421,12 +442,13 @@ def game_screen(g):
         html(ui.last_deal(r if r and r["day"] == g.day else None))
         st.write("")
         last = g.slot + 1 >= len(g.lineup)
-        if st.button("Next visitor", type="primary" if not last else "secondary", use_container_width=True,
-                     disabled=last):
+        if st.button("Next visitor", key="next_visitor", type="primary" if not last else "secondary",
+                     use_container_width=True, disabled=last):
             with st.spinner("Kuya Boy is writing it all down..."):
                 finish_visit()
             st.rerun()
-        if st.button("End day", type="primary" if last else "secondary", use_container_width=True, disabled=not last):
+        if st.button("End day", key="end_day", type="primary" if last else "secondary",
+                     use_container_width=True, disabled=not last):
             with st.spinner("Closing the office..."):
                 finish_visit()
             st.rerun()
@@ -456,7 +478,7 @@ def speech_screen(g):
     if st.session_state.pop("clear_speech", False):
         st.session_state.speech = ""
     html(ui.topbar(g))
-    html(ui.banner("Random event", ui.esc(EVENT_BANNERS.get(cid, "")), True))
+    html(ui.banner(EVENT_LABELS.get(cid, "Random event"), ui.esc(EVENT_BANNERS.get(cid, "")), True))
     left, mid, right = st.columns([1, 2.4, 1.05], gap="medium")
     if cid == "debate":
         html(ui.rival_card(g.flags["rival_funded"], rival_line(g)), left)
@@ -496,8 +518,8 @@ def speech_screen(g):
         html(ui.if_ended_now(score if score is None else score + (C.RIVAL_FUNDED_DEBATE_PENALTY
                                                                    if cid == "debate" and g.flags["rival_funded"] else 0)))
         last = g.slot + 1 >= len(g.lineup)
-        if st.button("End day" if last else "Next visitor", type="primary", use_container_width=True,
-                     disabled=not E.visit_over(g) and g.mayor_turns == 0):
+        if st.button("End day" if last else "Next visitor", key="end_day" if last else "next_visitor", type="primary",
+                     use_container_width=True, disabled=not E.visit_over(g) and g.mayor_turns == 0):
             with st.spinner("Counting the applause..."):
                 finish_visit()
             st.rerun()
