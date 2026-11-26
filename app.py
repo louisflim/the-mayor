@@ -549,11 +549,12 @@ def end_of_day_screen(g):
             st.session_state.headline = call(brain.headline, g, fallback=offline.headline)
     today = [r for r in g.log if r["day"] == g.day]
     big = max(today, key=lambda r: abs(r["d_wealth"]) / 10000 + abs(r["d_approval"]) + abs(r["d_suspicion"]), default=None)
-    emoji = get_card(big["visitor"]).emoji if big else "🏛️"
+    cid = big["visitor"] if big else None
+    emoji = get_card(cid).emoji if cid else "🏛️"
     html(f"<div class='banderitas'></div><div class='daytitle'><div class='av'>{ui.esc(ui.initials(g.mayor_name))}</div>"
          f"<div><b>END OF ARAW {g.day}</b><span class='muted'>{C.TERM_DAYS - g.day} day(s) left in your term</span></div></div>")
     left, right = st.columns([1.45, 1], gap="large")
-    html(ui.end_of_day_paper(g.day, st.session_state.headline, [r["memory_note"] for r in today], emoji), left)
+    html(ui.end_of_day_paper(g.day, st.session_state.headline, [r["memory_note"] for r in today], emoji, cid), left)
     with right:
         html(ui.todays_visitors(today, get_card))
         html(ui.your_stats(g.day_start, g))

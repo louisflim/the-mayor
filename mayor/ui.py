@@ -551,3 +551,5 @@ from . import ui_hifi as _hf  # noqa: E402
 CSS = CSS + _hf.CSS
 topbar, banner, visitors_today, memory_notes = _hf.topbar, _hf.banner, _hf.visitors_today, _hf.memory_notes
 scene, nameplate, dialogue, paper_mini, last_deal = _hf.scene, _hf.nameplate, _hf.dialogue, _hf.paper_mini, _hf.last_deal
+end_of_day_paper = _hf.end_of_day_paper
+todays_visitors = _hf.todays_visitors
