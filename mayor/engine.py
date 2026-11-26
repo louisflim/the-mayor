@@ -8,7 +8,7 @@ import random
 from dataclasses import dataclass, field, asdict
 
 from . import config as C
-from .cast import VISITORS, EVENTS, get_card
+from .cast import VISITORS, EVENTS, EVENT_INTRO, get_card
 
 OUTCOMES = {"deal", "paid", "helped", "refused", "threatened", "stalled"}
 
@@ -43,6 +43,7 @@ class GameState:
     phase: str = "briefing"                           # briefing | visit | night | ended
     ending: str | None = None
     jepoy_live: bool = False
+    event_plan: dict = field(default_factory=dict)    # day -> event id, drawn fresh for every game
     day_start: dict = field(default_factory=dict)     # stats at the start of today, for the end-of-day page
 
     # ---- convenience -------------------------------------------------
@@ -83,8 +84,27 @@ def new_game(mayor_name: str, gender: str = "male", seed: int | None = None) -> 
     # so learning one name doesn't solve the game.
     st.auditor_id = "engr_santos" if roll < 0.5 else "boss_erning" if roll < 0.8 else None
     st.relationship = {k: 0 for k in VISITORS}
+    st.event_plan = make_event_plan(seed)
     start_day(st)
     return st
+
+
+def make_event_plan(seed: int) -> dict:
+    """Draw this game's events: one random pool event per window, then the debate near the end."""
+    rng = random.Random(f"{seed}-events")
+    picks = rng.sample(C.EVENT_POOL, len(C.EVENT_SLOTS))
+    plan = {rng.randint(lo, hi): ev for (lo, hi), ev in zip(C.EVENT_SLOTS, picks)}
+    plan[rng.choice(C.DEBATE_DAYS)] = "debate"
+    return plan
+
+
+def planned_event(st: GameState, day: int) -> str | None:
+    return getattr(st, "event_plan", {}).get(day)
+
+
+def _ramon_days(st: GameState) -> set:
+    """Don Ramon comes back on two random days, so his bribe-and-rival arc lands differently every game."""
+    return set(random.Random(f"{st.seed}-ramon").sample(range(3, 9), 2))
 
 
 def _seen_recently(st: GameState, cid: str, days: int) -> bool:
@@ -101,9 +121,9 @@ def build_lineup(st: GameState) -> list:
             want.append(cid)
 
     if day == 1:
-        for cid in ("don_ramon", "lola_rosing", "kuya_boy"):
+        for cid in rng.sample(C.DAY1_POOL, C.VISITORS_PER_DAY):
             add(cid)
-    if day in (4, 8):
+    if day in _ramon_days(st):
         add("don_ramon")
     if day == 10 or (day >= 3 and not _seen_recently(st, "ms_reyes", 2)):
         add("ms_reyes")
@@ -137,9 +157,11 @@ def build_lineup(st: GameState) -> list:
     if day != 1:
         rng.shuffle(want)
 
-    event = C.EVENT_DAYS.get(day)
-    if event == "scandal" and st.suspicion < C.SCANDAL_THRESHOLD:
-        event = "ribbon"
+    event = planned_event(st, day)
+    if (event and event != "debate" and day >= 4 and st.suspicion >= C.SCANDAL_THRESHOLD
+            and not st.flags.get("scandal_done")):
+        event = "scandal"          # a high-Suspicion mayor gets the viral video instead of a friendlier event
+        st.flags["scandal_done"] = True
     if event:
         want.append(event)
     return want
@@ -193,6 +215,8 @@ def morning_briefing(st: GameState) -> list:
     elif event == "debate":
         extra = " At Boss, balita ko pinopondohan siya ni Don Ramon." if st.flags["rival_funded"] else ""
         lines.append(f"Kuya Boy: \"Debate tonight vs Konsehal Bong Tanyag. Tatlong tanong.{extra}\"")
+    elif event in EVENT_INTRO:
+        lines.append(EVENT_INTRO[event])
 
     if st.auditor_id in st.lineup and st.rng("hint").random() < 0.5:
         lines.append("Kuya Boy: \"Boss, may narinig ako sa canteen. May bagong mukha daw na umiikot sa "

@@ -151,14 +151,31 @@ button:disabled{opacity:.45;}
 .foot{text-align:center; color:var(--muted); font-size:.75rem; margin-top:1.2rem;}
 
 /* newspaper (end of day) */
-.paper{background:var(--paper); color:var(--ink); border:2px solid #3a2c20; border-radius:12px; padding:1rem 1.3rem 1.2rem;
-  background-image:radial-gradient(rgba(0,0,0,.03) 1px, transparent 1px); background-size:4px 4px;}
-.paper .strip{display:flex; justify-content:space-between; align-items:end; border-bottom:3px solid var(--ink); padding-bottom:.3rem;}
-.paper .strip b{font-family:'Playfair Display',serif; font-weight:900; font-size:1.25rem; letter-spacing:.02em; text-transform:uppercase;}
-.paper .head{font-family:'Anton',sans-serif; font-size:2.6rem; line-height:1.03; text-transform:uppercase; margin:.6rem 0 .7rem;}
-.paper .photo{height:190px; border:1.5px solid #bfae8c; display:grid; place-items:center; font-size:84px; border-radius:6px;
-  background:repeating-linear-gradient(45deg,#efe3c8 0 6px,#e9dbbd 6px 12px); filter:grayscale(.5);}
-.paper p{font-family:Georgia,serif; line-height:1.55; margin:.7rem 0 .4rem;}
+.paper{background:#fff; color:#111; border:1px solid #ddd; border-radius:2px; padding:1rem 1.15rem 1.2rem;
+  box-shadow:0 3px 14px rgba(0,0,0,.08); max-width:100%; overflow:hidden;}
+.paper .strip{display:grid; grid-template-columns:auto 1fr; gap:.8rem; align-items:center;
+  border-bottom:7px solid #ffd900; padding-bottom:.35rem;}
+.paper .paper-city{font-size:.65rem; line-height:1.05; font-weight:500; white-space:nowrap;}
+.paper .paper-city strong{display:block; color:#f00000; font-family:Arial,sans-serif; font-size:2rem;
+  line-height:.9; font-weight:1000; letter-spacing:-.08em;}
+.paper .paper-brand{font-family:Arial Black,Arial,sans-serif; font-size:clamp(2rem,5vw,4rem);
+  line-height:.9; font-weight:1000; letter-spacing:-.075em; text-align:right; white-space:nowrap;}
+.paper .head{font-family:Arial Black,Arial,sans-serif; color:#f00000; font-size:clamp(2rem,5vw,3.8rem);
+  line-height:.95; font-weight:1000; letter-spacing:-.045em; text-transform:uppercase; text-align:center;
+  margin:.45rem 0 .35rem; overflow-wrap:anywhere;}
+.paper .subhead{font-family:Arial Black,Arial,sans-serif; font-size:1.65rem; line-height:1.05;
+  font-weight:1000; text-align:center; margin:0 0 .55rem;}
+.paper .lead-grid{display:grid; grid-template-columns:1.65fr 1fr; gap:.55rem; align-items:start;}
+.paper .photo{min-height:190px; border:0; display:grid; place-items:center; font-size:clamp(4rem,9vw,6rem);
+  border-radius:0; background:#555; color:#fff; filter:none;}
+.paper .lead{font-family:Arial,sans-serif; font-size:.96rem; line-height:1.42; text-align:justify;
+  overflow-wrap:anywhere;}
+.paper .body-copy{font-family:Arial,sans-serif; font-size:.98rem; line-height:1.48; text-align:justify;
+  margin:.6rem .2rem 0; overflow-wrap:anywhere;}
+.paper .edition{font-size:.68rem; color:#555; text-align:right; margin-top:.55rem;}
+@media(max-width:560px){.paper{padding:.75rem}.paper .lead-grid{grid-template-columns:1fr 1fr;gap:.45rem}
+  .paper .photo{min-height:150px}.paper .lead,.paper .body-copy{font-size:.86rem}
+  .paper .paper-city strong{font-size:1.55rem}.paper .subhead{font-size:1.3rem}}
 .daytitle{display:flex; gap:.8rem; align-items:center; margin-bottom:.7rem;}
 .daytitle .av{width:52px; height:52px; font-weight:700; border-style:solid; border-color:#3a2c20; background:#fff3c4;}
 .daytitle b{font-family:'Anton',sans-serif; font-size:2rem; letter-spacing:.04em; display:block; line-height:1;}
@@ -387,10 +404,26 @@ def title_center() -> str:
 # End of day
 
 def end_of_day_paper(day: int, headline: str, story: list, emoji: str) -> str:
-    body = " ".join(esc(s) for s in story[:3]) or "City hall was quiet today. Suspiciously quiet."
-    return f"""<div class='paper'><div class='strip'><b>Ang Pahayagan ng Pogi</b><span class='muted'>Araw {day} edition</span></div>
-<div class='head'>{esc(headline)}</div><div class='photo'>{emoji}</div>
-<p><b>POGI CITY</b> — {body}</p><div class='muted'>The AI writes this headline from today's memory notes.</div></div>"""
+    # Build the article only from the day's recorded memory notes.
+    notes = [esc(str(note)) for note in story if note]
+    fallback = "City hall was quiet today. Suspiciously quiet."
+    lead = notes[0] if notes else fallback
+    body = " ".join(notes[1:]) if len(notes) > 1 else "The mayor’s decisions today will shape what happens next in Pogi City."
+    subhead = f"ARAW {day}: ANG MGA PANGYAYARI SA POGI CITY"
+    return f"""<article class='paper'>
+<div class='strip'>
+  <div class='paper-city'>Lungsod ng<strong>POGI</strong></div>
+  <div class='paper-brand'>Sonstar</div>
+</div>
+<div class='head'>{esc(headline)}</div>
+<div class='subhead'>{subhead}</div>
+<div class='lead-grid'>
+  <div class='photo' aria-label='Newspaper photo'>{esc(emoji)}</div>
+  <div class='lead'><b>POGI CITY</b> — {lead}</div>
+</div>
+<div class='body-copy'>{body}</div>
+<div class='edition'>ANG PAHAYAGAN NG POGI · ARAW {day} EDITION</div>
+</article>"""
 
 
 def todays_visitors(results, get_card) -> str:

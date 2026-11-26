@@ -11,8 +11,14 @@ VISITORS_PER_DAY = 3
 MAX_MAYOR_TURNS = 6          # mayor messages per visitor before they are shown out
 MAX_INPUT_CHARS = 500        # input filter cap
 
-EVENT_DAYS = {3: "typhoon", 5: "fiesta", 7: "scandal", 9: "debate"}
-SCANDAL_THRESHOLD = 60       # day 7 is a viral scandal only if Suspicion is at least this
+# Events are drawn fresh for every game: one random pool event lands on a random day inside each window,
+# and the debate always closes the term. (Scandal is not in the pool: it replaces an event when Suspicion is high.)
+EVENT_POOL = ["typhoon", "fiesta", "ribbon", "brownout", "dengue", "jeepney", "graduation", "callin"]
+EVENT_SLOTS = [(2, 3), (4, 5), (6, 7)]
+DEBATE_DAYS = (8, 9)
+# Day 1 draws its visitors from here instead of always being the same three
+DAY1_POOL = ["don_ramon", "lola_rosing", "kuya_boy", "sir_jepoy", "nanay_merly", "kap_luz", "engr_santos", "boss_erning"]
+SCANDAL_THRESHOLD = 60       # at this Suspicion the viral scandal replaces a planned event (once per game)
 
 # Overnight drift
 NIGHT_SUSPICION_DRIFT = -4   # the news cycle moves on
