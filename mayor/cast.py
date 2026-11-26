@@ -6,6 +6,8 @@ VISITOR CARD format from the proposal, plus the numbers the game code needs.
 
 from dataclasses import dataclass, field
 
+from .scenarios import scene_card
+
 
 @dataclass
 class Card:
@@ -283,6 +285,77 @@ EVENTS = {
         if_offered="", if_refused="", remembers="",
         kind="speech", speech_turns=3,
     ),
+    "brownout": Card(
+        id="brownout", name="Engr. Tolentino", role="Brownout town hall", emoji="🔦",
+        goal="Run a heated town hall after a twelve-hour brownout. Ask the mayor, one per reply, why the lights keep failing "
+             "and what the city will do before the next blackout. Describe the crowd's mood in one line.",
+        secret="None. Strictly about the power.",
+        personality="Sweaty, tired, speaks for angry residents holding candles.",
+        voice="Taglish with electrician jargon: \"Mayor, ilang oras na po kaming walang ilaw.\"",
+        sample_line="Mayor, labindalawang oras nang walang kuryente sa Pogi City. Ano po ang sagot ninyo sa mga residente?",
+        if_offered="", if_refused="", remembers="", kind="speech", speech_turns=2,
+    ),
+    "dengue": Card(
+        id="dengue", name="Dr. Baltazar", role="Dengue outbreak briefing", emoji="🦟",
+        goal="Brief the press on a dengue outbreak in four wards. Ask the mayor, one per reply, what the city will do this week "
+             "and why the fogging budget went missing. Describe the room's reaction in one line.",
+        secret="None. She just wants the budget released.",
+        personality="Calm, exhausted doctor who has not slept in two days.",
+        voice="Careful English with Tagalog asides: \"Mayor, hindi po ito biro.\"",
+        sample_line="Mayor, ika-apat na ward na po ang puno ng dengue. Ano po ang plano ng city hall ngayong linggo?",
+        if_offered="", if_refused="", remembers="", kind="speech", speech_turns=2,
+    ),
+    "jeepney": Card(
+        id="jeepney", name="Tatay Berto", role="Jeepney drivers' strike dialogue", emoji="🚌",
+        goal="Speak for jeepney drivers who parked at the plaza over the price of diesel. Ask the mayor, one per reply, "
+             "what the city will do about fuel costs and whether the new route rules favor big operators.",
+        secret="None. He just wants to drive.",
+        personality="Gruff, proud, speaks for forty drivers standing behind him.",
+        voice="Street Taglish: \"Boss, hindi na po kami kumikita.\"",
+        sample_line="Mayor, hindi na po kami makabiyahe sa presyo ng diesel. Ano po ang maitutulong ng city hall?",
+        if_offered="", if_refused="", remembers="", kind="speech", speech_turns=2,
+    ),
+    "graduation": Card(
+        id="graduation", name="Principal Cruz", role="Commencement at Pogi National High School", emoji="🎓",
+        goal="Introduce the mayor as guest speaker at a high school graduation. React like proud parents and teachers would, "
+             "and wince at anything improper in front of the children.",
+        secret="None.",
+        personality="Prim, proud, secretly terrified of what the mayor might say on stage.",
+        voice="Polite school Taglish: \"Mga bata po ang nakikinig.\"",
+        sample_line="Mayor, bago po kayo magsalita, paalala lang po: mga bata po ang nakikinig. Kayo na po ang bahala.",
+        if_offered="", if_refused="", remembers="", kind="speech", speech_turns=1,
+    ),
+    "callin": Card(
+        id="callin", name="DJ Wally", role="Live call-in on Radyo Pogi", emoji="📻",
+        goal="Host a live radio call-in with the mayor. Relay one caller's question per reply (a market vendor, a tricycle driver, "
+             "a retired teacher), then react to the mayor's answer in one line.",
+        secret="None. He lives for dead air and drama.",
+        personality="Smooth, loud, loves a spicy caller.",
+        voice="Radio Taglish: \"Live tayo, Pogi City!\"",
+        sample_line="Good morning, Pogi City! Live tayo kasama si Mayor! May caller tayo sa line 1, si Aling Nena. May tanong po siya sa inyo.",
+        if_offered="", if_refused="", remembers="", kind="speech", speech_turns=2,
+    ),
+}
+
+
+EVENT_INTRO = {   # Kuya Boy's morning line for events that have no special rules
+    "brownout": "Kuya Boy: \"Boss, brownout na naman sa buong lungsod. Town hall mamayang gabi, galit ang mga tao. Dalawang tanong 'yan.\"",
+    "dengue": "Kuya Boy: \"Boss, dengue outbreak sa apat na ward. Press briefing mamaya. Itatanong nila kung nasaan ang pondo sa fogging.\"",
+    "jeepney": "Kuya Boy: \"Boss, nag-welga ang mga jeepney. Nakaparada sila sa plaza. Kakausapin mo sila mamaya.\"",
+    "graduation": "Kuya Boy: \"Boss, guest speaker ka sa graduation ng Pogi National High. Mga bata ang makikinig, ha. Ayusin natin.\"",
+    "callin": "Kuya Boy: \"Boss, live call-in sa Radyo Pogi mamaya. Kahit sino puwedeng tumawag. Kahit sino.\"",
+}
+
+EVENT_TOMORROW = {   # shown on the end-of-day screen
+    "typhoon": "Bagyong Kulot is coming. Lubog will flood.",
+    "fiesta": "Pista ng Pogi: you're giving a speech.",
+    "ribbon": "You're opening the barangay basketball league.",
+    "brownout": "A brownout town hall. The residents are not happy.",
+    "dengue": "A dengue outbreak briefing. The press wants a plan.",
+    "jeepney": "The jeepney drivers are going on strike.",
+    "graduation": "You're the guest speaker at a high school graduation.",
+    "callin": "A live call-in on Radyo Pogi. Anything can happen.",
+    "debate": "Election debate against Konsehal Tanyag.",
 }
 
 
@@ -291,7 +364,8 @@ def all_cards() -> dict:
 
 
 def get_card(card_id: str) -> Card:
-    return all_cards()[card_id]
+    """The card as it plays today in this game (scenario variant + today's twist)."""
+    return scene_card(all_cards()[card_id])
 
 
 def card_text(card: Card, *, undercover: bool, mayor_name: str, uncle_aunt: str, sir_maam: str) -> str:

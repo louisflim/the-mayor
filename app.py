@@ -17,9 +17,10 @@ from mayor import engine as E
 from mayor import ui
 from mayor import ui_hifi
 from mayor.brain import ScriptedBrain, make_brain
-from mayor.cast import EVENTS, VISITORS, get_card
+from mayor.cast import EVENT_TOMORROW, EVENTS, VISITORS, get_card
 from mayor.defenses import clean_input, kuya_boy_callout
 from mayor.llm import PROVIDERS, LLMError
+from mayor.scenarios import set_scene_context
 
 st.set_page_config(page_title="The Mayor of Pogi City", page_icon="🏛️", layout="wide",
                    initial_sidebar_state="collapsed")
@@ -44,6 +45,11 @@ EVENT_BANNERS = {
     "fiesta": "Pista ng Pogi tonight! Give a speech at the plaza. The crowd reacts live.",
     "scandal": "A video of a brown envelope on your desk went viral. Face the press.",
     "ribbon": "You're opening the barangay basketball league tonight. Short speech lang.",
+    "brownout": "Brownout town hall: twelve hours without power and the residents are angry. Answer their questions.",
+    "dengue": "Dengue outbreak briefing: four wards are affected and the press wants a plan.",
+    "jeepney": "The jeepney drivers are parked at the plaza over diesel prices. Hear them out.",
+    "graduation": "Commencement at Pogi National High School. Keep it short and keep it clean.",
+    "callin": "Live call-in on Radyo Pogi. The callers will say anything.",
     "debate": "Election debate at the city plaza. Answer each question with a speech. The crowd reacts live.",
 }
 TOMORROW = {
@@ -51,7 +57,8 @@ TOMORROW = {
     7: "Something big tomorrow. Depends how suspicious people are.", 9: "Election debate against Konsehal Tanyag.",
     10: "Your last day. Ms. Reyes will be there.",
 }
-EVENT_LABELS = {"typhoon": "BAGYO ALERT!", "fiesta": "PISTA!", "scandal": "BREAKING!", "ribbon": "TIRA!", "debate": "DEBATE!"}
+EVENT_LABELS = {"typhoon": "BAGYO ALERT!", "fiesta": "PISTA!", "scandal": "BREAKING!", "ribbon": "TIRA!", "debate": "DEBATE!",
+                "brownout": "BROWNOUT!", "dengue": "DENGUE ALERT!", "jeepney": "WELGA!", "graduation": "GRADUATION!", "callin": "ON AIR!"}
 
 
 def html(s: str, where=st):
@@ -119,7 +126,7 @@ def call(fn, *args, fallback=None):
 
 
 @st.dialog("Settings")
-def settings_dialog():
+def settings_dialog(in_game: bool = False):
     s = settings()
     opts = available_providers()
     provider = st.selectbox("AI model provider", opts, index=opts.index(s["provider"]) if s["provider"] in opts else 0,
@@ -134,6 +141,15 @@ def settings_dialog():
     if st.button("Save", type="primary"):
         s.update(provider=provider, model=model, temperature=temp, debug=debug)
         st.rerun()
+    g = st.session_state.get("game")
+    if in_game and g:
+        st.divider()
+        if st.button("🏠 Main menu", use_container_width=True):
+            st.session_state.screen = "title"
+            st.rerun()
+        log = {"exported": datetime.now().isoformat(timespec="seconds"), "state": g.to_dict()}
+        st.download_button("⬇️ Export chat history", json.dumps(log, ensure_ascii=False, indent=2),
+                           file_name=f"the-mayor-araw{g.day}.json", mime="application/json", use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
@@ -541,7 +557,7 @@ def end_of_day_screen(g):
     with right:
         html(ui.todays_visitors(today, get_card))
         html(ui.your_stats(g.day_start, g))
-        html(ui.tomorrow(TOMORROW.get(g.day + 1, "A normal day. Probably.") if g.day < C.TERM_DAYS
+        html(ui.tomorrow(EVENT_TOMORROW.get(E.planned_event(g, g.day + 1), "A normal day. Probably.") if g.day < C.TERM_DAYS
                          else "Your term ends tonight. Let's see how history remembers you."))
         c1, c2 = st.columns(2)
         if c1.button("Main menu", use_container_width=True):
@@ -579,27 +595,20 @@ def game_over_screen(g):
 
 # ---------------------------------------------------------------------------
 
-def sidebar():
-    g = st.session_state.get("game")
-    with st.sidebar:
-        st.markdown("## 🏛️ Pogi City Hall")
-        s = settings()
-        st.caption(f"AI: {s['provider']}" + (f" · {s['model']}" if s["provider"] != "Offline demo" else ""))
-        if st.button("⚙️ Settings", use_container_width=True):
-            settings_dialog()
-        if st.button("🏠 Main menu", use_container_width=True):
-            st.session_state.screen = "title"
-            st.rerun()
-        if g:
-            log = {"exported": datetime.now().isoformat(timespec="seconds"), "state": g.to_dict()}
-            st.download_button("⬇️ Export chat history", json.dumps(log, ensure_ascii=False, indent=2),
-                               file_name=f"the-mayor-araw{g.day}.json", mime="application/json",
-                               use_container_width=True)
+def settings_button():
+    """Gear at the top-left of every in-game screen (positioned by ui_hifi.py)."""
+    if st.button("⚙️", key="settings_btn", help="Settings"):
+        settings_dialog(in_game=True)
 
 
 def main():
-    sidebar()
     g = st.session_state.get("game")
+    if g:   # tell the scenario system which game, day and visit counts we are on
+        set_scene_context(g.seed, g.day, g.visits)
+    else:
+        set_scene_context(0, 1, {})
+    if g and st.session_state.get("screen", "title") != "title":
+        settings_button()
     if not g or st.session_state.get("screen", "title") == "title":
         title_screen()
         return

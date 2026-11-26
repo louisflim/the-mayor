@@ -1,4 +1,4 @@
-"""Hi-fi theme for The Mayor: chunky game-UI look from the Figma "Game Screen" mockup.
+﻿"""Hi-fi theme for The Mayor: chunky game-UI look from the Figma "Game Screen" mockup.
 
 Plugs into ui.py (see the 6-line hook at the bottom of this file's docstring):
 
@@ -15,7 +15,27 @@ import base64
 from pathlib import Path
 
 from . import config as C
-from .ui import esc, fmt_dialogue, colors, initials, bar, peso_short, suspicion_color
+from .ui import esc, fmt_dialogue, colors, initials, bar, peso_short, suspicion_color, PORTRAIT_COLORS
+
+_FONT_PATH = Path(__file__).resolve().parent.parent / "assets" / "fonts" / "proximanova-black.otf"
+_FONT_DATA = base64.b64encode(_FONT_PATH.read_bytes()).decode() if _FONT_PATH.is_file() else None
+_REGULAR_FONT_PATH = Path(__file__).resolve().parent.parent / "assets" / "fonts" / "proximanova-regular.otf"
+_REGULAR_FONT_DATA = base64.b64encode(_REGULAR_FONT_PATH.read_bytes()).decode() if _REGULAR_FONT_PATH.is_file() else None
+_FONT_FACE = (
+    '@font-face{font-family:"Proxima Nova Black";src:url("data:font/otf;base64,'
+    + _FONT_DATA
+    + '") format("opentype");font-style:normal;font-weight:900;font-display:swap}'
+    if _FONT_DATA else ""
+)
+_REGULAR_FONT_FACE = (
+    '@font-face{font-family:"Proxima Nova";src:url("data:font/otf;base64,'
+    + _REGULAR_FONT_DATA
+    + '") format("opentype");font-style:normal;font-weight:400;font-display:swap}'
+    if _REGULAR_FONT_DATA else ""
+)
+
+PORTRAIT_COLORS.update({"brownout": ("#ffe9a8", "#c79a2b"), "dengue": ("#d6f0d0", "#4f9a45"), "jeepney": ("#ffd0a8", "#e07b39"),
+                        "graduation": ("#d9d6ff", "#5b52c9"), "callin": ("#ffc6c6", "#d8222f")})
 
 # Give your Streamlit widgets these keys, e.g. st.button("Accept", key="act_accept"), and they get the mockup colours.
 KEYS = {  # key: (face, edge, text)
@@ -50,12 +70,18 @@ _KEYCSS = "".join(
 
 CSS = """<style>
 @import url('https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;700;800&display=swap');
+""" + _FONT_FACE + _REGULAR_FONT_FACE + """
 :root{--navy:#14226b;--navy2:#0b1550;--gold:#ffcf1f;--cream:#fff6dc;--wood:#7a4a22;--ink:#3b2417;--sh:4px 5px 0 #3b2417;
 --red:#d8222f;--green:#2fa84f;--purple:#7b49c9;--muted:#7d6a55}
 html,body,.stMarkdown,button,input,textarea{font-family:'Nunito',sans-serif !important}
 """ + _BG + """
-[data-testid="stHeader"]{background:transparent}
-.block-container{max-width:100% !important;padding:.8rem 1.6rem 1rem !important}
+/* Proxima Nova is reserved for the end-of-day newspaper only. The rest of the app uses Lilita One + Nunito. */
+.paper,.paper *{font-family:'Proxima Nova',sans-serif !important}
+.paper .paper-city strong,.paper .paper-brand,.paper .head,.paper .subhead{
+  font-family:'Proxima Nova Black','Arial Black',Impact,sans-serif !important;
+}
+[data-testid="stHeader"]{background:transparent;pointer-events:none}
+.block-container{max-width:100% !important;padding:.8rem 1.6rem 1rem 4.8rem !important}
 [data-testid="stToolbar"],[data-testid="stDecoration"],[data-testid="stStatusWidget"],#MainMenu,footer{display:none !important}
 .box{background:var(--cream);border:4px solid var(--ink);border-radius:22px;padding:.8rem .95rem;box-shadow:var(--sh)}
 .h{font-family:'Lilita One',sans-serif;font-size:1.05rem;letter-spacing:.04em;text-transform:none;color:var(--wood);margin-bottom:.4rem}
@@ -195,6 +221,12 @@ align-items:center;padding:0 3rem;font-weight:700;z-index:1}
 [class*="st-key-menu_sm_"] button[data-testid^='stBaseButton']{background:transparent !important;color:#fff6dc !important;
 border:1.5px solid rgba(255,246,220,.55) !important;box-shadow:none !important;min-height:44px;font-size:.9rem !important;border-radius:14px !important;letter-spacing:.02em;white-space:nowrap;padding:0 .2rem !important}
 [class*="st-key-menu_sm_"] button p{color:#fff6dc !important}
+
+/* settings gear, top-left of every in-game screen (the sidebar is no longer used) */
+[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"],[data-testid="collapsedControl"]{display:none !important}
+.st-key-settings_btn{position:fixed;top:.8rem;left:.8rem;z-index:1000001;width:auto !important}
+.st-key-settings_btn button[data-testid^='stBaseButton']{width:50px;min-height:50px;padding:0 !important;background:var(--cream) !important;
+color:var(--ink) !important;font-size:1.5rem !important;border-radius:16px !important}
 </style>"""
 
 
