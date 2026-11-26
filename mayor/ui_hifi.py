@@ -93,7 +93,8 @@ html,body,.stMarkdown,button,input,textarea{font-family:'Nunito',sans-serif !imp
 .hf-mayor{display:flex;gap:.7rem;align-items:center;background:var(--cream);border:4px solid var(--ink);border-radius:99px;
 padding:.4rem 1.4rem .4rem .45rem;box-shadow:var(--sh)}
 .hf-mayor .av{width:52px;height:52px;border-radius:50%;border:4px solid var(--gold);background:#fff;display:grid;place-items:center;
-font-family:'Lilita One','Arial Black',Impact,sans-serif;color:#9a9a9a;font-size:1.2rem}
+font-family:'Lilita One','Arial Black',Impact,sans-serif;color:#9a9a9a;font-size:1.2rem;overflow:hidden;flex:none}
+.hf-mayor .av img,.hf-av img{width:100%;height:100%;object-fit:cover;object-position:center top;image-rendering:pixelated;display:block}
 .hf-mayor b{display:block;font-family:'Lilita One','Arial Black',Impact,sans-serif;font-weight:400;font-size:1.5rem;color:var(--navy);line-height:1;letter-spacing:.03em}
 .hf-mayor span{font-size:.8rem;color:var(--muted);font-weight:700}
 .hf-araw{justify-self:center;background:var(--navy);border:4px solid var(--gold);border-radius:20px;padding:.35rem 1.6rem .45rem;
@@ -125,7 +126,7 @@ border-radius:14px;padding:.45rem 1rem;margin-bottom:.8rem;color:#fff;font-weigh
 letter-spacing:.05em;margin-bottom:.3rem}
 .hf-row{display:flex;align-items:center;gap:.65rem;padding:.4rem .1rem}
 .hf-av{width:46px;height:46px;border-radius:50%;border:4px solid #b9b2a6;background:#e9e3d6;display:grid;place-items:center;
-font-family:'Lilita One','Arial Black',Impact,sans-serif;color:#9a9486;flex:none}
+font-family:'Lilita One','Arial Black',Impact,sans-serif;color:#9a9486;flex:none;overflow:hidden}
 .hf-row.cur .hf-av{border-color:var(--gold);background:#fff;color:var(--navy)}
 .hf-av.q{background:var(--navy2);border-color:#3b3b3b;color:var(--gold);font-size:1.4rem}
 .hf-row .nm{flex:1;line-height:1.1}
@@ -146,7 +147,7 @@ box-shadow:0 2px 0 rgba(0,0,0,.4)}
 .hf-stage{height:clamp(200px,32vh,340px);border-radius:36px;border:6px solid var(--ink);display:grid;place-items:center;overflow:hidden;
 background:#d9d5ca;box-shadow:var(--sh)}
 .hf-stage.event{background:radial-gradient(circle at 50% 35%,#4b5fb0,#1b2a5e)}
-.hf-stage img{max-height:100%;max-width:100%;image-rendering:pixelated}
+.hf-stage img{max-height:100%;max-width:100%;image-rendering:pixelated;filter:drop-shadow(0 12px 0 rgba(59,36,23,.2));animation:hfin .45s ease-out}
 .hf-stage .face{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;font-size:92px;border:6px solid #fff;
 box-shadow:0 0 0 4px var(--ring,#ccc),0 12px 0 rgba(0,0,0,.18);animation:hfin .45s ease-out}
 @keyframes hfin{from{transform:translateX(-40%) scale(.9);opacity:0}to{transform:none;opacity:1}}
@@ -169,6 +170,8 @@ box-shadow:var(--sh)}
 .hf-news .mast{font-family:'Lilita One','Arial Black',Impact,sans-serif;font-size:.85rem;border-bottom:2px solid var(--ink);padding-bottom:.25rem;letter-spacing:.04em}
 .hf-news .head{font-family:'Lilita One','Arial Black',Impact,sans-serif;font-size:1.5rem;line-height:1.05;margin:.3rem 0;text-transform:uppercase;color:var(--ink)}
 .hf-news small{color:var(--muted);font-weight:700;font-size:.72rem}
+.paper .photo{overflow:hidden}
+.paper .photo img{max-height:100%;max-width:100%;object-fit:contain;image-rendering:pixelated}
 .hf-deal{background:#fffdf3;border:4px solid var(--green);border-radius:14px;padding:.6rem .9rem;transform:rotate(-3deg);
 box-shadow:var(--sh);margin:.8rem 0 .8rem -.4rem}
 .hf-deal.bad{border-color:var(--red)}.hf-deal.idle{border-color:#b9b2a6}
@@ -212,6 +215,9 @@ button[data-testid^="stBaseButton"]:focus-visible{outline:3px solid var(--gold) 
 .mm-cap{text-align:center;color:#fff;font-weight:700;font-size:.85rem}
 .mm-pill{display:inline-block;background:#fff4dc;border:4px solid var(--ink);border-radius:14px;padding:.4rem 1.4rem;
 font-family:'Lilita One','Arial Black',Impact,sans-serif;font-size:1.4rem;color:var(--ink);box-shadow:0 4px 0 var(--ink);text-transform:uppercase}
+.mm-cast{display:flex;justify-content:flex-end;gap:.35rem;margin-top:.9rem}
+.mm-cast img{width:56px;height:56px;border-radius:50%;border:4px solid var(--gold);background:var(--cream);
+object-fit:cover;object-position:center top;image-rendering:pixelated;box-shadow:var(--sh)}
 .mm-bar{position:fixed;left:0;right:0;bottom:0;height:116px;background:#41383a;color:#fff6dc;display:flex;justify-content:space-between;
 align-items:center;padding:0 3rem;font-weight:700;z-index:1}
 .st-key-menu_continue button[data-testid^='stBaseButton']{background:#fcd116 !important;color:#3b2417 !important;min-height:58px;font-size:1.5rem !important}
@@ -233,13 +239,17 @@ color:var(--ink) !important;font-size:1.5rem !important;border-radius:16px !impo
 # ---------------------------------------------------------------------------
 
 def topbar(g) -> str:
-    dots = "".join(f"<i class='{'done' if d < g.day else 'now' if d == g.day else ''}'></i>" for d in range(1, C.TERM_DAYS + 1))
+    dots = "".join(f"<i class='{'done' if d < g.day else 'now' if d == g.day else ''}'></i>"
+                   for d in range(1, C.TERM_DAYS + 1))
     left = max(0, C.TERM_DAYS - g.day)
+    mayor_art = _uri(f"chars/avatar_mayor_{'female' if g.gender == 'female' else 'male'}.png")
+    mayor_av = f"<img src='{mayor_art}' alt=''>" if mayor_art else esc(initials(g.mayor_name))
+
 
     def stat(icon, color, label, val, vcolor, pct, fill):
         return (f"<div class='hf-stat'><div class='ic' style='background:{color}'>{icon}</div><div class='sb'>"
                 f"<div class='row'><span>{label}</span><em style='color:{vcolor}'>{val}</em></div>{bar(pct, fill)}</div></div>")
-    return (f"<div class='hf-top'><div class='hf-mayor'><div class='av'>{esc(initials(g.mayor_name))}</div>"
+    return (f"<div class='hf-top'><div class='hf-mayor'><div class='av'>{mayor_av}</div>"
             f"<div><b>MAYOR {esc(g.mayor_name.upper())}</b><span>Pogi City Hall · Philippines</span></div></div>"
             f"<div class='hf-araw'><b>ARAW {g.day} / {C.TERM_DAYS}</b><div class='hf-dots'>{dots}</div>"
             f"<small>{left} day{'s' if left != 1 else ''} left in your term</small></div>"
@@ -278,7 +288,10 @@ def visitors_today(g, get_card, events) -> str:
             pill = "Next"
         elif hidden:
             pill, cls = "???", "mys"
-        av = "<div class='hf-av q'>?</div>" if hidden else f"<div class='hf-av'>{esc(initials(c.name))}</div>"
+        art = _uri(f"chars/avatar_{cid}.png")
+        av = ("<div class='hf-av q'>?</div>" if hidden else
+              f"<div class='hf-av'><img src='{art}' alt=''></div>" if art else
+              f"<div class='hf-av'>{esc(initials(c.name))}</div>")
         rows.append(f"<div class='hf-row {row}'>{av}<div class='nm'><b>{esc(name)}</b><div>{esc(sub)}</div></div>"
                     f"<span class='pill {cls}'>{pill}</span></div>")
     foot = ("<div class='hf-foot'>Someone today is undercover. Watch how they talk.</div>"
@@ -325,6 +338,52 @@ def paper_mini(headline: str | None) -> str:
             f"<div class='head'>{head}</div><small>The AI writes a new headline from what you did each day.</small></div>")
 
 
+def end_of_day_paper(day: int, headline: str, story: list, emoji: str, cid: str | None = None) -> str:
+    notes = [esc(str(note)) for note in story if note]
+    fallback = "City hall was quiet today. Suspiciously quiet."
+    lead = notes[0] if notes else fallback
+    body = " ".join(notes[1:]) if len(notes) > 1 else "The mayor’s decisions today will shape what happens next in Pogi City."
+    subhead = f"ARAW {day}: ANG MGA PANGYAYARI SA POGI CITY"
+    art = _uri(f"chars/{cid}.png") if cid else None
+    photo = f"<img src='{art}' alt=''>" if art else esc(emoji)
+    return f"""<article class='paper'>
+<div class='strip'>
+  <div class='paper-city'>Lungsod ng<strong>POGI</strong></div>
+  <div class='paper-brand'>Sonstar</div>
+</div>
+<div class='head'>{esc(headline)}</div>
+<div class='subhead'>{subhead}</div>
+<div class='lead-grid'>
+  <div class='photo' aria-label='Newspaper photo'>{photo}</div>
+  <div class='lead'><b>POGI CITY</b> — {lead}</div>
+</div>
+<div class='body-copy'>{body}</div>
+<div class='edition'>ANG PAHAYAGAN NG POGI · ARAW {day} EDITION</div>
+</article>"""
+
+
+def todays_visitors(results, get_card) -> str:
+    rows = []
+    for r in results:
+        cid = r["visitor"]
+        c = get_card(cid)
+        tag = _DONE.get(r["outcome"], r["outcome"])
+        cls = "bad" if tag in _BAD else "ok" if r["outcome"] in ("deal", "helped", "paid", "speech") else ""
+        if cid in ("engr_santos", "boss_erning") and r["outcome"] == "refused":
+            tag, cls = "Not caught", "ok"
+        w = r["d_wealth"]
+        art = _uri(f"chars/avatar_{cid}.png")
+        av = (f"<div class='hf-av'><img src='{art}' alt=''></div>" if art else
+              f"<div class='hf-av'>{esc(initials(c.name))}</div>")
+        name = c.name if c.kind == "visitor" else c.role
+        detail = (f"{'+' if w > 0 else '−' if w < 0 else ''}₱{abs(w):,} · "
+                  f"Approval {r['d_approval']:+d} · Suspicion {r['d_suspicion']:+d}")
+        rows.append(f"<div class='hf-row'>{av}<div class='nm'><b>{esc(name)}</b><div>{esc(detail)}</div></div>"
+                    f"<span class='pill {cls}'>{esc(tag)}</span></div>")
+    empty = "<div class='hf-foot'>Nobody came.</div>"
+    return f"<div class='box hf-list'><div class='hd'>TODAY'S VISITORS</div>{''.join(rows) or empty}</div>"
+
+
 _HEAD = {"deal": "DEAL!", "paid": "PAID!", "helped": "HELPED!", "refused": "REFUSED!", "threatened": "THREAT!",
          "stalled": "STALLED", "speech": "SPEECH!", "caught": "CAUGHT!"}
 
@@ -357,7 +416,11 @@ def menu_header() -> str:
 
 
 def welcome_pill() -> str:
-    return "<div style='text-align:right;margin-top:.4rem'><span class='mm-pill'>Welcome to City Hall</span></div>"
+    faces = "".join(f"<img src='{art}' alt=''>" for art in
+                    (_uri(f"chars/avatar_{cid}.png") for cid in
+                     ("don_ramon", "lola_rosing", "ms_reyes", "kuya_boy", "atty_villaflor")) if art)
+    return (f"<div style='text-align:right;margin-top:.4rem'><span class='mm-pill'>Welcome to City Hall</span>"
+            f"<div class='mm-cast'>{faces}</div></div>")
 
 
 def menu_bar() -> str:
